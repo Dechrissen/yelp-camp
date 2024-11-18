@@ -8,7 +8,8 @@ const ExpressErroe = require('./utils/ExpressError');
 const catchAsync = require('./utils/catchAsync');
 const ExpressError = require('./utils/ExpressError');
 const Joi = require('joi');
-const {campgroundSchema} = require('./schemas')
+const {campgroundSchema, reviewSchema} = require('./schemas')
+const Review = require('./models/review');
 
 // connect to mongo
 mongoose.connect('mongodb://localhost:27017/yelp-camp')
@@ -33,6 +34,7 @@ app.engine('ejs', ejsMate);
 app.use(express.urlencoded({ extended: true })); // this is for parsing the request body on POST requests
 app.use(methodOverride('_method')); // this is for using more HTTP verbs, like PUT PATCH DELETE. the 'method' in an HTML form will be overridden
 
+// Joi validation (middleware function we can run in a route)
 const validateCampground = (req,res,next) => {
     // Validation //
     const { error } = campgroundSchema.validate(req.body);
@@ -44,6 +46,17 @@ const validateCampground = (req,res,next) => {
         next();
     }
     //console.log(result);
+}
+// Joi validation (middleware function we can run in a route)
+const validateReview = (req,res,next) => {
+    const {error} = reviewSchema.validate(req.body);
+
+    if (error) {
+        const msg = error.details.map(elem => elem.message).join(',')
+        throw new ExpressError(msg, 400);
+    } else {
+        next();
+    }
 }
 
 app.get('/', (req,res) => {
@@ -70,7 +83,7 @@ app.post('/campgrounds', validateCampground, catchAsync(async (req,res,next) => 
 
 // GET for show page, showing details for one campground by id
 app.get('/campgrounds/:id', catchAsync(async (req,res) => {
-    const campground = await Campground.findById(req.params.id);
+    const campground = await Campground.findById(req.params.id).populate('reviews');
     res.render('campgrounds/show.ejs', { campground });
 }));
 
@@ -99,6 +112,24 @@ app.delete('/campgrounds/:id', catchAsync(async (req,res) => {
     await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds');
 }));
+
+// REVIEW routes
+app.post('/campgrounds/:id/reviews', validateReview, catchAsync(async (req,res) => {
+    const campground = await Campground.findById(req.params.id);
+    const review = new Review(req.body.review);
+    campground.reviews.push(review);
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${campground._id}`);
+}))
+
+app.delete('/campgrounds/:id/reviews/:reviewId', catchAsync(async (req,res) => {
+    const {id, reviewId} = req.params;
+    await Campground.findByIdAndUpdate(id, { $pull : {reviews: reviewId} }); // $pull is the recommended way to remove from Array in Mongoose
+        // it removes reviews that match that reviewId
+    await Review.findByIdAndDelete(reviewId);
+    res.redirect(`/campgrounds/${id}`);
+}))
 
 // 404
 app.all('*', (req,res,next) => {

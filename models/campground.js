@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Review = require('./review');
 const Schema = mongoose.Schema;
 
 const CampgroundSchema = new Schema({
@@ -6,7 +7,27 @@ const CampgroundSchema = new Schema({
     image: String,
     price: Number,
     description: String,
-    location: String
+    location: String,
+    reviews: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Review' // refers to the Review model in models/review.js
+        }
+    ]
 });
+
+// Delete middleware for deleting reviews when a campground is deleted
+CampgroundSchema.post('findOneAndDelete', async function (doc) {
+    // if there was a deleted doc ...
+    if (doc) {
+        // delete ALL reviews in the reviews model where their ID field is in ($in) our deleted doc's (doc) `reviews` array
+        await Review.deleteMany({
+            _id: {
+                $in: doc.reviews
+            }
+        })
+    }
+    //console.log(doc);
+})
 
 module.exports = mongoose.model('Campground', CampgroundSchema);

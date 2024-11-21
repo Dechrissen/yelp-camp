@@ -3,38 +3,56 @@ const cities = require('./cities');
 const { places, descriptors } = require('./seedHelpers');
 const Campground = require('../models/campground');
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp')
-.then(() => {
-    console.log('MONGO CONNECTION OPEN');
-})
-.catch(err => {
-    console.log('MONGO ERROR:')
-    console.log(err);
+mongoose.connect('mongodb://localhost:27017/yelp-camp', {
+    useNewUrlParser: true,
+    useCreateIndex: true,
+    useUnifiedTopology: true
 });
 
-// this function gets a random element from an array
-const sample = (array) => array[Math.floor(Math.random() * array.length)];
+const db = mongoose.connection;
 
-// this function returns a Promise because it's async
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => {
+    console.log("Database connected");
+});
+
+const sample = array => array[Math.floor(Math.random() * array.length)];
+
+
 const seedDB = async () => {
     await Campground.deleteMany({});
-    for (let i = 0; i < 50; i++) {
-        const random = Math.floor(Math.random() * 1000);
+    for (let i = 0; i < 300; i++) {
+        const random1000 = Math.floor(Math.random() * 1000);
         const price = Math.floor(Math.random() * 20) + 10;
         const camp = new Campground({
-            location: `${cities[random].city}, ${cities[random].state}`,
+            //YOUR USER ID
+            author: '5f5c330c2cd79d538f2c66d9',
+            location: `${cities[random1000].city}, ${cities[random1000].state}`,
             title: `${sample(descriptors)} ${sample(places)}`,
-            image: `https://picsum.photos/400?random=${Math.random()}`,
-            description: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Animi doloribus consequatur quia quod quam, distinctio necessitatibus consectetur assumenda odit iure blanditiis dolore consequuntur suscipit ex in sunt voluptates commodi esse.',
-            price
+            description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Quibusdam dolores vero perferendis laudantium, consequuntur voluptatibus nulla architecto, sit soluta esse iure sed labore ipsam a cum nihil atque molestiae deserunt!',
+            price,
+            geometry: {
+                type: "Point",
+                coordinates: [
+                    cities[random1000].longitude,
+                    cities[random1000].latitude,
+                ]
+            },
+            images: [
+                {
+                    url: 'https://res.cloudinary.com/douqbebwk/image/upload/v1600060601/YelpCamp/ahfnenvca4tha00h2ubt.png',
+                    filename: 'YelpCamp/ahfnenvca4tha00h2ubt'
+                },
+                {
+                    url: 'https://res.cloudinary.com/douqbebwk/image/upload/v1600060601/YelpCamp/ruyoaxgf72nzpi4y6cdi.png',
+                    filename: 'YelpCamp/ruyoaxgf72nzpi4y6cdi'
+                }
+            ]
         })
         await camp.save();
     }
-    console.log('Database seeded')
 }
 
-// returns a Promise, so we can use .then()
 seedDB().then(() => {
     mongoose.connection.close();
-    console.log('MONGO CONNECTION CLOSED')
-});
+})

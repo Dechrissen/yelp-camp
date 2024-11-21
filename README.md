@@ -1,13 +1,19 @@
-# YelpCamp
+# yelp-camp
+This project is based on the same-named project featured in Colt Steele's Web Developer Bootcamp course on Udemy. It is a demo web app which illustrates the interplay of many commonly-used Node.js packages for web app development.
+
+## Overview
 This project makes use of:
 - Node
 - Express
 - MongoDB
 - Mongoose
 - Bootstrap
+- Passport
+- express-session
+- MapTiler
 
-## `/seeds/index.js`
-Running this file with `node /seeds/index.js` will seed the database with sample data.
+### Seeding 
+`/seeds/index.js` -- Running this file with `node /seeds/index.js` will seed the database with sample data.
 
 ## Full CRUD functionality
 
@@ -56,6 +62,6 @@ DELETE /campground/:id
 - e.g., for `CampgroundSchema` in `campground.js`, we have a custom 'post' middleware that triggers on `findOneAndDelete`
 - Since `findByIdAndDelete` triggers this action, our `DELETE` route for deleting campgrounds from the `show.ejs` page will trigger it
 - When our custom middleware runs, it will also delete _all_ reviews associated with that campground
-```javascript
 
-```
+## Authentication
+- Authentication is implemented using Passport
